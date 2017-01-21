@@ -1,0 +1,9 @@
+{
+  "description": "Base packer template",
+  "min_packer_version": "0.12.2",
+  "variables": {},
+  "builders": [{}],
+  "provisioners": [],
+  "post-processors": [],
+  "_comments": "This is a comment"
+}
