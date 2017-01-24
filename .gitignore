@@ -6,3 +6,7 @@ packer_cache/
 # For built boxes
 *.box
 
+*.retry
+
+packer_templates/*.json
+public_http/*.preseed
