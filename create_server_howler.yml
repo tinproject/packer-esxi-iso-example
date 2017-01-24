@@ -2,8 +2,13 @@
 - name: Create Packer template file
   hosts: local
   vars_files:
-    - vars/howler_packer_template.yml
+    - vm_data/howler_packer_template.yml
   tasks:
+    - name: "Create preseed template"
+      template:
+        src: "vm_data/{{ hostname }}_preseed_template.j2"
+        dest: "public_http/{{ fqdn }}.preseed"
+
     - name: "Create Packer template"
       template:
         src: "templates/packer_template.json.j2"
