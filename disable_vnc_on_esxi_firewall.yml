@@ -1,0 +1,16 @@
+---
+- name: Disable vnc on ESXi host firewall
+  hosts: esxi
+  tasks:
+#    - name: Disable VNC firewall rule
+#      command: "esxcli network firewall ruleset set --ruleset-id=VNC --enabled=false"
+
+    - name: Add VNC rule to firewall
+      file:
+        path: "/etc/vmware/firewall/vnc.xml"
+        state: absent
+      register: vnc_file
+
+    - name: Refresh ESXi firewall rules
+      command: "esxcli network firewall refresh"
+      when: vnc_file.changed

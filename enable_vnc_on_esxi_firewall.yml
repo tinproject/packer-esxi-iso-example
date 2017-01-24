@@ -1,0 +1,45 @@
+---
+- name: Enable vnc on ESXi host firewall
+  hosts: esxi
+  tasks:
+    - name: Add VNC rule to firewall
+      shell:
+        creates: "/etc/vmware/firewall/vnc.xml"
+        cmd: |
+          /bin/cat > /etc/vmware/firewall/vnc.xml << EOF
+          <ConfigRoot>
+            <!-- VNC -->
+            <service id="0222">
+              <id>VNC</id>
+              <rule id='0000'>
+                  <direction>outbound</direction>
+                  <protocol>tcp</protocol>
+                  <porttype>dst</porttype>
+                  <port>
+                     <begin>5900</begin>
+                     <end>5999</end>
+                  </port>
+               </rule>
+               <rule id='0001'>
+                  <direction>inbound</direction>
+                  <protocol>tcp</protocol>
+                  <porttype>dst</porttype>
+                  <port>
+                     <begin>5900</begin>
+                     <end>5964</end>
+                  </port>
+               </rule>
+               <enabled>true</enabled>
+               <required>false</required>
+            </service>
+          </ConfigRoot>
+          EOF
+      register: vnc_file
+
+    - name: Refresh ESXi firewall rules
+      command: "esxcli network firewall refresh"
+      when: vnc_file.changed
+
+    - name: Enable VNC firewall rule
+      command: "esxcli network firewall ruleset set --ruleset-id=VNC --enabled=true"
+      when: vnc_file.changed
