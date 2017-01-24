@@ -1,0 +1,133 @@
+# Base definition of YAML data to generate a packer JSON template.
+# Must define at minimum: custom data, iso location and sum, and boot command
+---
+## custom variables for ansible creation of the packer template
+hostname: "machine hostname"
+domain: "machine domain/group"
+fqdn: "{{ hostname }}.{{ domain }}"
+rev_fqdn: "{{ domain }}.{{ hostname }}"
+preseed_file: "{{ fqdn }}.preseed"
+machine_specs:
+  cpus: 2
+  mem_size: 1024
+  network: "VM Network"
+  disk_size: 16000
+  guest_os_type: ""
+
+
+## Definition of the packer template.
+packer_template:
+  description: "Base packer template"
+  min_packer_version: "0.12.2"
+  ## Packer template user variables definition
+  variables:
+
+  ## Packer template builders definition
+  builders:
+  - type: "vmware-iso"
+
+    ## Define the connection to the ESXi host
+    remote_type: "esx6"
+    remote_host: "{{ hostvars['esxi']['ansible_host'] }}"
+    remote_port: "22"
+    remote_username: "{{ hostvars['esxi']['ansible_user'] }}"
+#    remote_password: "..."
+    remote_private_key_file: "{{ hostvars['local']['ansible_user_dir'] }}/.ssh/esxi"
+    ## Define the location of the resulting VM
+    remote_datastore: "main"
+    output_directory: "{{domain}}/{{ hostname }}"
+    ## Define location of the packer cache on the remote ESXi
+    remote_cache_datastore: "main"
+    remote_cache_directory: "packer/cache"
+
+    ## VM settings
+    format: "vmx"
+    version: "11"
+    vm_name: "{{ rev_fqdn }}"
+    vmx_data:
+      ethernet0.present: "TRUE"
+      ethernet0.startConnected: "TRUE"
+      ethernet0.virtualdev: "vmxnet3"
+      ethernet0.addressType: "generated"
+      ethernet0.networkName: "{{ machine_specs.network }}"
+      ethernet0.uptCompatibility: "TRUE"
+      scsi0.virtualdev: "pvscsi"
+      virtualhw.productcompatibility: "hosted"
+      virtualhw.version: "11"
+      vcpu.hotadd: "TRUE"
+      mem.hotadd: "TRUE"
+      memsize: "{{ machine_specs.mem_size }}"
+      numvcpus: "{{ machine_specs.cpus }}"
+      tools.upgrade.policy: "manual"
+      tools.syncTime: "0"
+      time.synchronize.continue: "1"
+      time.synchronize.restore: "1"
+      time.synchronize.resume.disk: "1"
+      time.synchronize.shrink: "1"
+      time.synchronize.tools.startup: "1"
+      time.synchronize.tools.enable: "1"
+      time.synchronize.resume.host: "1"
+      vhv.enable: "TRUE"
+      svga.present: "TRUE"
+#    vmx_data_post: {}
+#    vmx_template_path: "..."
+
+    ## VM disk config, units are MB
+    vmdk_name: "{{ rev_fqdn }}"
+    disk_type_id: "eagerzeroedthick"
+    disk_size: "{{ machine_specs.disk_size }}"
+    ## apart from main disk, additional disks could be added
+#    disk_additional_size: [ 10000, 20000]
+    skip_compaction: no
+
+    ## Guest OS identifier from ESXi
+    guest_os_type: "{{ machine_specs.guest_os_type }}"
+
+    ## Destination template must define the iso location and sum
+#    iso_url: ""
+#    iso_urls: []
+#    iso_checksum: "..."
+#    iso_checksum_type: "..."
+#    iso_checksum_url: ""
+#    iso_target_extension: "..."
+#    iso_target_path: "..."
+
+    ## VNC settings for packer to connect the guest OS
+#    vnc_bind_address: "0.0.0.0"
+#    vnc_disable_password: no
+    vnc_port_min: 5900
+    vnc_port_max: 5964
+    headless: no
+
+    ## HTTP server to load preseedand other config files
+    http_directory: "./public-http"
+    http_port_min: 8000
+    http_port_max: 9000
+
+#    ## Use floppy disk for load config files at install, not work with recent linuxes
+#    floppy_files
+#    floppy_dirs
+
+    ## Commands to run through vnc to install the OS
+    boot_command: []
+    boot_wait: "10s"
+
+    ## settings for connect to the guest vm
+    communicator: "ssh"
+    ssh_username: "packer"
+    ssh_password: "p4ck3r"
+    ssh_timeout: "60m"
+
+    ## how to shutdown the vm after installs
+    shutdown_command: "echo 'packer' | sudo -S shutdown -P now"
+    shutdown_timeout: "5m"
+
+    ## Keep register the VM after creation
+    skip_export: no
+    keep_registered: yes
+
+#    ## Instal VMWare-toolls?
+#    tools_upload_flavour: "linux"
+#    tools_upload_path: ""
+
+

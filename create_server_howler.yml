@@ -1,0 +1,17 @@
+---
+- name: Create Packer template file
+  hosts: local
+  vars_files:
+    - vars/howler_packer_template.yml
+  tasks:
+    - name: "Create Packer template"
+      template:
+        src: "templates/packer_template.json.j2"
+        dest: "packer_templates/{{ fqdn }}.json"
+
+    - name: "Validate packer template"
+      command: "packer validate ./packer_templates/{{ fqdn }}.json"
+
+    - name: "Build packer template"
+      command: "packer build ./packer_templates/{{ fqdn }}.json"
+      when: no
