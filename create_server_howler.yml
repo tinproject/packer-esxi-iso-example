@@ -9,6 +9,12 @@
         src: "vm_data/{{ hostname }}_preseed_template.j2"
         dest: "public_http/{{ fqdn }}.preseed"
 
+    - name: "Calculate md5 of preseed file"
+      stat:
+        path: "public_http/{{ fqdn }}.preseed"
+        get_md5: yes
+      register: generated_preseed
+
     - name: "Create Packer template"
       template:
         src: "templates/packer_template.json.j2"

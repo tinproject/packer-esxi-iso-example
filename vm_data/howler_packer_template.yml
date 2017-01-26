@@ -7,6 +7,8 @@ domain: "desguace"
 fqdn: "{{ hostname }}.{{ domain }}"
 rev_fqdn: "{{ domain }}.{{ hostname }}"
 preseed_file: "{{ fqdn }}.preseed"
+username: "packer"
+password: "packer"
 machine_specs:
   cpus: 2
   mem_size: 4096
@@ -35,7 +37,7 @@ packer_template:
     remote_private_key_file: "{{ hostvars['local']['ansible_user_dir'] }}/.ssh/esxi"
     ## Define the location of the resulting VM
     remote_datastore: "main"
-    output_directory: "{{domain}}/{{ hostname }}"
+    output_directory: "{{domain}}.{{ hostname }}"
     ## Define location of the packer cache on the remote ESXi
     remote_cache_datastore: "main"
     remote_cache_directory: "packer/cache"
@@ -96,35 +98,40 @@ packer_template:
     headless: yes
 
     ## HTTP server to load preseedand other config files
-    http_directory: "./public-http"
+    http_directory: "./public_http"
     http_port_min: 8000
     http_port_max: 9000
 
     ## Commands to run through vnc to install the OS
     boot_command:
       - "PACKER_KEY_INTERVAL=80ms"
-      - "<esc><wait>"
+      - "<enter><wait><f6><esc><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>"
+      - "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>"
+      - "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>"
+      - "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>"
       - "install <wait>"
-      - "preseed/url=http://{% raw %}{{.HTTPIP }}:{{ .HTTPPort }}{% endraw %}/{{ preseed_file }} <wait>"
-      - "debian-installer=en_US <wait>"
-      - "auto <wait>"
-      - "locale=en_US <wait>"
-      - "kbd-chooser/method=es <wait>"
-      - "keyboard-configuration/xkb-keymap=es <wait>"
-      - "netcfg/get_hostname={{ hostname }} <wait>"
-      - "netcfg/get_domain={{ domain }} <wait>"
-      - "fb=false <wait>"
-      - "debconf/frontend=noninteractive <wait>"
-      - "console-setup/ask_detect=false <wait>"
-      - "console-keymaps-at/keymap=es <wait>"
-      - "grub-installer/bootdev=/dev/sda <wait>"
+      - "auto "
+      - "url=http://{% raw %}{{.HTTPIP }}:{{ .HTTPPort }}{% endraw %}/{{ preseed_file }} "
+      - "preseed-md5={{ generated_preseed.stat.md5 }} "
+      - "locale=en_US.UTF-8 "
+      - "language=en "
+      - "country=US "
+      - "keymap=es "
+      - "hostname={{ hostname }} "
+      - "domain={{ domain }} "
+      - "fb=false "
+      - "initrd=/install/initrd.gz "
+      - "debconf/frontend=noninteractive "
+      - "console-setup/ask_detect=false "
+      - "console-keymaps-at/keymap=es "
+      - "grub-installer/bootdev=/dev/sda "
       - "<enter><wait>"
     boot_wait: "10s"
 
     ## settings for connect to the guest vm
     communicator: "ssh"
-    ssh_username: "packer"
-    ssh_password: "p4ck3r"
+    ssh_username: "{{ username }}"
+    ssh_password: "{{ password }}"
     ssh_timeout: "60m"
 
     ## how to shutdown the vm after installs
